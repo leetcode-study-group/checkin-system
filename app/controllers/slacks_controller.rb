@@ -9,7 +9,8 @@ class SlacksController < ApplicationController
       :channel_id, :channel_name,
       :timestamp,
       :text,
-      :trigger_word
+      :trigger_word,
+      :service_id, :bot_id, :bot_name
     )
   end
 
@@ -40,13 +41,14 @@ class SlacksController < ApplicationController
   end
 
   def attach_leetcode
-    @leetcode = Leetcode.find_by_slack_id @slack.id
+    slack = Slack.find_by_slack_id @slack.slack_id
+    @leetcode = Leetcode.find_by_slack_id slack.id
     unless @leetcode
       @leetcode = Leetcode.new
-      temp_token = TempToken.create(slack_id: @slack.id)
+      temp_token = TempToken.create(slack_id: slack.id)
       render json: {text: "It seems that you didn't attach your Leetcode account.
 Please click the following link to sign up in 5 minutes.
-<http://localhost:3000/leetcodes/new?temp_token=#{temp_token.token}>"}.to_json
+<http://#{default_url_options[:host]}:3000/leetcodes/new?temp_token=#{temp_token.token}>"}.to_json
     end
   end
 
