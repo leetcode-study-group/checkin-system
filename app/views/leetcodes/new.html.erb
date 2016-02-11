@@ -1,0 +1,27 @@
+<h2>Submit Leetcode account</h2>
+<% if @slack %>
+
+  <p>Dear, <%= @slack.slack_name %>:</p>
+  <% if @slack.leetcode %>
+  <p>
+    You've already attached your leetcode account
+    <%= @slack.leetcode.email %>
+    to your slack account.
+  </p>
+  <% else %>
+  <p>
+    It seems that you didn't attch your Slack account to a Leetcode account yet.
+    Please fill the form to submit your Leetcode account.
+  </p>
+  <%= render 'leetcodes/form' %>
+  <% end %>
+
+<% else %>
+  <% if params[:temp_token] %>
+  <p>
+    Caution: your token expired or invalid. You will NOT attach your leetcode account
+    to the Slack account.
+  </p>
+  <% end %>
+  <%= render 'leetcodes/form' %>
+<% end %>

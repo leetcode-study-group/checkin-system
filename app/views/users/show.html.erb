@@ -1,0 +1,24 @@
+<h2>Profile</h2>
+<p>
+  <strong>Email:</strong>
+  <%= @user.email %>
+</p>
+
+<% if @user.slack %>
+<p>
+  <strong>Slack Username:</strong>
+  <%= @user.slack.slack_name %>
+</p>
+
+  <% if @user.slack.leetcode %>
+  <p>
+    <strong>Leetcode Email:</strong>
+    <%= @user.slack.leetcode.email %>
+  </p>
+  <p>
+    <strong>Leetcode Username:</strong>
+    <%= @user.slack.leetcode.username %>
+  </p>
+  <% end %>
+
+<% end %>
