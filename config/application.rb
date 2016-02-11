@@ -23,5 +23,6 @@ module Work3
     # Do not swallow errors in after_commit/after_rollback callbacks.
     config.active_record.raise_in_transactional_callbacks = true
     config.active_job.queue_adapter = :delayed_job
+    config.web_console.whiny_requests = false unless Rails.env.production?
   end
 end
