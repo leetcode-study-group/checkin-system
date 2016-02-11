@@ -1,6 +1,7 @@
 
 class GoalsController < SlacksController
   protect_from_forgery
+  skip_before_action :verify_authenticity_token, only: [:create]
   before_action :authenticate
 
   def create
@@ -10,7 +11,7 @@ class GoalsController < SlacksController
     when /\A(register|signup)\z/
       return already_existed args
     end
-    render json: args.to_json
+    render json: {text: "not handled yet"}.to_json
   end
 
   private
