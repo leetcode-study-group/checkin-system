@@ -220,7 +220,7 @@ help         => display this message
 
 NTOE:
 1. put [week|month|year] as the first word to set weekly/monthly/annual goals
-2. you can set multiple goals in command, separate them with ';'
+2. you can set multiple goals in one command, separate them with ';'
 "
 
 class Symbol
