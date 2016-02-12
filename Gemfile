@@ -51,3 +51,16 @@ gem 'sorcery'
 # Schedule DB cleanup 
 gem 'daemons'
 gem 'delayed_job_active_record'
+
+# Web Scraping
+gem 'nokogiri'
+gem 'mechanize'
+gem 'watir'
+
+# cron job
+gem 'whenever', require: false
+
+# better console
+group :development do
+  gem 'pry-rails'
+end
