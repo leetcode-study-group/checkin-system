@@ -1,0 +1,17 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  period: MyString
+  task_type: MyString
+  task: MyString
+  tries: 1
+  progress: MyString
+  user_id: 
+
+two:
+  period: MyString
+  task_type: MyString
+  task: MyString
+  tries: 1
+  progress: MyString
+  user_id: 
