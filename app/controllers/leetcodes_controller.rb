@@ -76,6 +76,7 @@ class LeetcodesController < ApplicationController
       )
       @user.save
     end
+    @slack = Slack.find @leetcode.slack_id
     @slack.update(user_id: @user.id) if (@slack and !@slack.user_id)
   end
 
