@@ -40,8 +40,13 @@ class UsersController < ApplicationController
   # PATCH/PUT /users/1
   # PATCH/PUT /users/1.json
   def update
+    args = user_params
+    if args[:email] and leetcode = Leetcode.find_by_email(@user.email)
+      leetcode.update(email: args[:email])
+    end
+
     respond_to do |format|
-      if @user.update(user_params)
+      if @user.update(args)
         format.html { redirect_to @user, notice: 'User was successfully updated.' }
         format.json { render :show, status: :ok, location: @user }
       else
