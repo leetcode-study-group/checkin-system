@@ -1,3 +1,4 @@
+# coding: utf-8
 
 class GoalsController < SlacksController
   protect_from_forgery
@@ -24,16 +25,22 @@ class GoalsController < SlacksController
                :daily
              end
 
-    #binding.pry
     @response = ''
+    @broadcast = ''
     @action = :show
     task.split(/\s*;\s*/).each {|t| parse_task t} if task
+
+    unless @broadcast.empty?
+      send_to_slack({text: @broadcast, attachments: goals_sumary})
+      @action = :report
+    end
+
     case @action
     when :show
       tasks = list_tasks
-      render json: {text: @response + "\n#{@period} goal:\n#{tasks.empty? ? 'empty' : tasks}"}
+      render json: {text: @response + "#{@period}: #{tasks.empty? ? 'empty' : tasks}"}
     when :report
-      render json: {text: @response + "REPORT PLACEHOLDER"}
+      render nothing: true
     when :help
       render json: {text: USAGE}
     end
@@ -49,21 +56,25 @@ class GoalsController < SlacksController
   def parse_task task
     # 1, 2-3, 7
     if /\A(\d+(-\d+)?)(\s*,\s*(\d+(-\d+)?))*\z/ =~ task
-      split_problems(task).each {|p| new_leetcode_task p, type: 'leetcode_problem'}
+      split_problems(task).each {|p| new_task p, type: 'leetcode_problem'}
+      @broadcast = "#{@slack_name} updated the #{@period} goal!"
 
     # 3'
-    elsif /\A(?<points>\d+)'\z/ =~ task
+    elsif /\A(?<points>\d+)('|\u2019)\z/ =~ task # the Slack may auto transfer ' to ’
       old_point = current_goals.select {|t| t.task_type == 'leetcode_point'}[0]
-      old_point = new_leetcode_task points, type: 'leetcode_point' unless old_point
+      old_point = new_task points, type: 'leetcode_point' unless old_point
       old_point.update(task: points)
+      @broadcast = "#{@slack_name} updated the #{@period} goal!"
 
     # #23
     elsif /\A#(?<completed>\d+)\z/ =~ task
       question = find_leetcode_by_no completed
-      question = new_leetcode_task completed, type: 'leetcode_problem' unless question
-      question.progress = (question.progress.to_i + 1).to_s
+      question = new_task completed, type: 'leetcode_problem' unless question
+      question.progress = (question.progress.to_i + 1).to_s # AC add 1
       question.save
-      @response += "You have completed leetcode problem ##{completed}\n"
+
+      update_points completed
+      @broadcast = "#{@slack_name} just completed ##{completed}!"
 
     # -17
     elsif /\A-(?<to_del>\d+)\z/ =~ task
@@ -71,13 +82,15 @@ class GoalsController < SlacksController
       if question and /0(%)?/ =~ question.progress
         question.delete
         @response += "You cancelled leetcode problem ##{to_del}\n"
+        @broadcast = ""
       end
 
-    # same as @Bob
-    elsif /\Asame\s+as\s+@(?<other>[^\s]+)(:\s*)?\z/ =~ task
+    # copy @Bob
+    elsif /\A(same\s+as|copy)\s+@(?<other>[^\s]+)(:\s*)?\z/ =~ task
       msg = ''
       catch :not_found do
-        msg = "Did not find user #{other}"
+        msg = "Copy #{other} failed...\n"
+        @broadcast = ""
 
         slack = Slack.find_by_slack_name other
         throw :not_found unless slack
@@ -100,12 +113,14 @@ class GoalsController < SlacksController
             ).save
           end
           msg = "You copied #{other}'s goals\n"
+          @broadcast = "#{@slack_name} copied #{other}'s #{@period} goals!"
         end
       end
       @response += msg
 
     elsif /\A(report|progress|status)\z/ =~ task
       @action = :report
+      @broadcast = "#{@slack_name} shared #{@period} goals."
 
     elsif /\Areset\z/ =~ task
       current_goals.each do |g|
@@ -116,25 +131,30 @@ class GoalsController < SlacksController
         end
       end
       @response = "You've reset your #{@period} goals\n"
+      @broadcast = ""
 
     elsif /\Ashow\z/ =~ task or !task
       @action = :show
+      @broadcast = ""
 
-    elsif /\Ahelp\z/ =~ task
-      @action = :help
-
-    else
+    elsif /\A:\s*(?<normal>.*)\z/ =~ task
       Goal.new(
         period: @period,
         task_type: 'normal',
-        task: task,
+        task: normal,
         user_id: @user.id
       ).save
       # XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX: add cron job to remind you complete at end of the day
+      @broadcast = "#{@slack_name} updated the #{@period} goal!"
+
+    else
+      @action = :help
+      @broadcast = ""
 
     end
   end
 
+  # "7, 1-3, 3, 8" => [1, 2, 3, 7, 8]
   def split_problems str
     str.gsub('-', '..').split(/\s*,\s*/).map {|e| eval(e)} .reduce([]) do |nos, e|
       case e
@@ -146,9 +166,9 @@ class GoalsController < SlacksController
     end .sort.uniq
   end
 
-  def new_leetcode_task problem, type: 'normal'
+  def new_task problem, period: @period, type: 'normal'
     goal = Goal.new(
-      period: @period,
+      period: period,
       task_type: type,
       task: problem.to_s,
       user_id: @user.id,
@@ -157,49 +177,67 @@ class GoalsController < SlacksController
     goal
   end
 
-  def current_goals user: @user
-    start_time = eval("Time.zone.now.beginning_of_#{@period.remove_ly}")
-    Goal.where('created_at >= ? and user_id = ? and period = ?', start_time, user.id, @period)
+  def current_goals user: @user, period: @period, task_type: nil
+    start_time = eval("Time.zone.now.beginning_of_#{period.remove_ly}")
+    goals = Goal.where('created_at >= ? and user_id = ? and period = ?', start_time, user.id, period)
+    task_type ? goals.select {|g| g.task_type == task_type} : goals
   end
 
-  def list_tasks
-    goals = current_goals
+  # => "{ 1(M) | 7(E) } (0/4) ; os homework"
+  def list_tasks user: @user
+    goals = current_goals user: user
     problems, others = goals.partition {|t| t.task_type == 'leetcode_problem'}
     point, normals = others.partition {|t| t.task_type == 'leetcode_point'}
     point = point[0]
 
-    ((problems.empty? and !point) ? "" : "Leetcode: #{format_leetcodes problems, point}\n") +
+    ((problems.empty? and !point) ? "" : "#{format_leetcodes problems, point}; ") +
       (normals.empty? ? "" : format_normals(normals))
   end
 
   def format_leetcodes problems, point
-    sum = 0
-    completed = 0
     problems_str = problems.map do |p|
       question = LeetcodeProblem.find_by_no(p.task.to_i)
-      sum += question.point
-      completed += question.point if p.done?
-      "##{p.task}(#{question.difficulty})" + (p.done? ? "[DONE]" : "")
-    end .join("\n")
+      "#{p.task}(#{question.difficulty[0]})" + (p.done? ? "\u2705" : "")
+    end .join(" | ")
 
-    point = new_leetcode_task sum.to_s, type: 'leetcode_point' unless point
-    point.task = sum if sum > point.task.to_i
-    point.progress = completed
-    point.save
-    "{\n#{problems_str}\n} (#{point.progress}/#{point.task} pts)"
+    point = Goal.new(task: '0', progress: '0') unless point
+    "{ #{problems_str} } (#{point.progress}/#{point.task})"
   end
 
   def format_normals normals
-    normals.map {|g| g.task + (g.done? ? "[#{g.progress}]" : "")} .join("\n")
+    normals.map {|g| g.task + (g.progress[0] != '0' ? "[#{g.progress}]" : "")} .join("; ")
   end
 
   def find_leetcode_by_no no
     current_goals.select {|g| g.task_type == 'leetcode_problem' and g.task == no}[0]
   end
 
+  def update_points no
+    question = LeetcodeProblem.find_by_no(no)
+    return unless question
+    point = question.point
+    [:daily, :weekly, :monthly, :annual].each do |period|
+      pt = current_goals(period: period, task_type: 'leetcode_point')[0]
+      pt = new_task '0', period: period, type: 'leetcode_point' unless pt
+      pt.progress = (pt.progress.to_i + point).to_s
+      pt.save
+    end
+  end
+
+  def goals_sumary
+    members = Slack.where('team_id = ?', @team_id)
+    sumary = members.map do |m|
+      user = User.find m.user_id
+      tasks = list_tasks(user: user)
+      tasks.empty? ? nil : "#{m.slack_name}: #{list_tasks(user: user)}"
+    end .compact.join("\n")
+    [{text: sumary}]
+  end
+
 end
 
 USAGE = "
+------------------------------------------------------------------------------
 Usage:
 ### Leetcode
 NO ARGUMENTS => show your current goals
@@ -207,20 +245,14 @@ NO ARGUMENTS => show your current goals
 3'           => set daily goal to 3 points
 #23          => finished leetcode problem #23
 -7           => cancel leetcode problem #7
-same as @Bob => copy Bob's daily goal
+copy @Bob => copy Bob's daily goal
 
-### Normal
-whatever => set daily goal to 'whatever'
+:whatever => set daily goal to 'whatever'
 
-### Misc
 report       => show today's progress
-report week  => show current week's progress (valid for month, year)
-signup       => to attch your leetcode account
-help         => display this message
 
-NTOE:
-1. put [week|month|year] as the first word to set weekly/monthly/annual goals
-2. you can set multiple goals in one command, separate them with ';'
+NOTE: put [week|month|year] as the first word to set weekly/monthly/annual goals
+------------------------------------------------------------------------------
 "
 
 class Symbol

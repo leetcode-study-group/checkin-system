@@ -21,19 +21,23 @@ class SlacksController < ApplicationController
     )
     return render plain: 'Authenticate failed' unless @token
 
+    @team_id = args[:team_id]
+    @slack_id = args[:user_id]
+    @slack = Slack.find_by_slack_id_and_token_id(
+      @slack_id, @token.id
+    )
+    @slack_name = args[:user_name]
+
     new_slack
     attach_leetcode
   end
 
   def new_slack
-    args = slack_params
-    @slack = Slack.find_by_slack_id_and_token_id(
-      args[:user_id], @token.id
-    )
     unless @slack
       @slack = Slack.new(
-        slack_id: args[:user_id],
-        slack_name: args[:user_name],
+        slack_id: @slack_id,
+        slack_name: @slack_name,
+        team_id: @team_id,
         token_id: @token.id
       )
       @slack.save
@@ -41,15 +45,29 @@ class SlacksController < ApplicationController
   end
 
   def attach_leetcode
-    slack = Slack.find_by_slack_id @slack.slack_id
-    @leetcode = Leetcode.find_by_slack_id slack.id
+    @leetcode = Leetcode.find_by_slack_id @slack.id
     unless @leetcode
       @leetcode = Leetcode.new
-      temp_token = TempToken.create(slack_id: slack.id)
+      temp_token = TempToken.create(slack_id: @slack.id)
       render json: {text: "It seems that you didn't attach your Leetcode account.
 Please click the following link to sign up in 5 minutes.
 <http://#{default_url_options[:host]}:3000/leetcodes/new?temp_token=#{temp_token.token}>"}.to_json
     end
+  end
+
+  # via Incoming webhook
+  def send_to_slack json
+    receiver = Receiver.find_by_team_id @team_id
+    return false unless receiver
+
+    uri = URI.parse(receiver.url)
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true if URI::HTTPS === uri
+
+    request = Net::HTTP::Post.new(uri.path, {'Content-Type' => 'application/json'})
+    request.body = json.to_json
+
+    http.request(request)
   end
 
 end
