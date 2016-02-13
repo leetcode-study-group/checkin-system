@@ -178,7 +178,7 @@ class GoalsController < SlacksController
   end
 
   def current_goals user: @user, period: @period, task_type: nil
-    start_time = eval("Time.zone.now.beginning_of_#{period.remove_ly}")
+    start_time = eval("Time.now.beginning_of_#{period.remove_ly}")
     goals = Goal.where('created_at >= ? and user_id = ? and period = ?', start_time, user.id, period)
     task_type ? goals.select {|g| g.task_type == task_type} : goals
   end
