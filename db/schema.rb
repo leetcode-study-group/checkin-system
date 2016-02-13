@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160212031622) do
+ActiveRecord::Schema.define(version: 20160213102014) do
 
   create_table "delayed_jobs", force: :cascade do |t|
     t.integer  "priority",   default: 0, null: false
@@ -62,9 +62,17 @@ ActiveRecord::Schema.define(version: 20160212031622) do
 
   add_index "leetcodes", ["slack_id"], name: "index_leetcodes_on_slack_id"
 
+  create_table "receivers", force: :cascade do |t|
+    t.string   "team_id"
+    t.string   "url"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "slacks", force: :cascade do |t|
     t.string   "slack_name"
     t.string   "slack_id"
+    t.string   "team_id"
     t.integer  "user_id"
     t.integer  "token_id"
     t.datetime "created_at", null: false

@@ -1,15 +1,9 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  slack_name: MyString
-  slack_id: MyString
   team_id: MyString
-  user_id: 
-  token_id: 
+  url: MyString
 
 two:
-  slack_name: MyString
-  slack_id: MyString
   team_id: MyString
-  user_id: 
-  token_id: 
+  url: MyString
