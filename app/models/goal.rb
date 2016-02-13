@@ -3,7 +3,7 @@ class Goal < ActiveRecord::Base
   validates :user_id, presence: true
   validates :task, presence: true
   validates :task_type, presence: true
-  validates_uniqueness_of :task, scope: [:user_id, :task_type]
+  validates_uniqueness_of :task, scope: [:user_id, :period, :task_type]
 
   after_initialize :set_default
 
