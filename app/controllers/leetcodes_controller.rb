@@ -27,7 +27,7 @@ class LeetcodesController < ApplicationController
       password: args[:password],
       slack_id: slack_id
     )
-    attach_user
+    return render :new unless attach_user
 
     respond_to do |format|
       if @leetcode.save
@@ -74,7 +74,7 @@ class LeetcodesController < ApplicationController
         password: @leetcode.password,
         password_confirmation: @leetcode.password
       )
-      @user.save
+      return false unless @user.save
     end
     @slack = Slack.find @leetcode.slack_id
     @slack.update(user_id: @user.id) if (@slack and !@slack.user_id)
