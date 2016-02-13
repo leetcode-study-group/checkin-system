@@ -48,14 +48,18 @@ end
 # User Management
 gem 'sorcery'
 
-# Schedule DB cleanup 
+# Schedule DB cleanup
 gem 'daemons'
 gem 'delayed_job_active_record'
 
 # Web Scraping
 gem 'nokogiri'
 gem 'mechanize'
+
+# Simulating login
 gem 'watir'
+gem 'headless'
+gem 'chronic' # calculate relative time
 
 # cron job
 gem 'whenever', require: false

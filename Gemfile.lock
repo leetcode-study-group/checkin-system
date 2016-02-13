@@ -71,6 +71,7 @@ GEM
     ffi (1.9.10)
     globalid (0.3.6)
       activesupport (>= 4.1.0)
+    headless (2.2.2)
     http-cookie (1.0.2)
       domain_name (~> 0.5)
     i18n (0.7.0)
@@ -214,9 +215,11 @@ PLATFORMS
 
 DEPENDENCIES
   byebug
+  chronic
   coffee-rails (~> 4.1.0)
   daemons
   delayed_job_active_record
+  headless
   jbuilder (~> 2.0)
   jquery-rails
   mechanize

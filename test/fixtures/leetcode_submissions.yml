@@ -1,0 +1,19 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  submit_time: 2016-02-13 10:49:06
+  path: MyString
+  status: MyString
+  detail_path: MyString
+  runtime: MyString
+  lang: MyString
+  leetcode_id: 
+
+two:
+  submit_time: 2016-02-13 10:49:06
+  path: MyString
+  status: MyString
+  detail_path: MyString
+  runtime: MyString
+  lang: MyString
+  leetcode_id: 

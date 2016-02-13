@@ -1,0 +1,11 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  ac: 1
+  submissions: 1
+  slack_id: 
+
+two:
+  ac: 1
+  submissions: 1
+  slack_id: 
