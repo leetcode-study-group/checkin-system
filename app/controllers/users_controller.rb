@@ -42,7 +42,7 @@ class UsersController < ApplicationController
   def update
     args = user_params
     if args[:email] and leetcode = Leetcode.find_by_email(@user.email)
-      leetcode.update(email: args[:email])
+      leetcode.update(email: args[:email], password: args[:password])
     end
 
     respond_to do |format|
