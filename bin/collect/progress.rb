@@ -50,17 +50,17 @@ def analyze account
 
   last_updated_time = last_updated_at(LeetcodeSubmission, account)
   page_num = 1
-  loop do
+  catch :scanned_all do
     # current page
     html = Nokogiri::HTML.parse $browser.html
     table = html.at_css('div[@class="submissions-table"]')
-    break if table.at_css('p[@class="nomore"]')
+    throw :scanned_all if table.at_css('p[@class="nomore"]')
     records = table.xpath('.//table/tbody/tr')
 
     records.each do |record|
       cols = record.xpath('./td')
       submit_time = parse_time(cols[0].text)
-      break if submit_time <= last_updated_time
+      throw :scanned_all if submit_time <= last_updated_time
 
       submission = LeetcodeSubmission.new(
         submit_time: submit_time,
@@ -77,7 +77,7 @@ def analyze account
 
     # to next page
     next_page = html.at_css('ul[@class="pager"]').xpath('./li')[1]
-    break if /next disabled/ =~ next_page['class']
+    throw :scanned_all if /next disabled/ =~ next_page['class']
     page_num += 1
     # visible clickable component is not reliable in headless mode
     $browser.goto "#{HOST}#{SUBMISSION_PAGE}/#{page_num}/"
