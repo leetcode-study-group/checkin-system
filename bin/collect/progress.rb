@@ -51,36 +51,38 @@ def analyze account
   last_updated_time = last_updated_at(LeetcodeSubmission, account)
   page_num = 1
   catch :scanned_all do
-    # current page
-    html = Nokogiri::HTML.parse $browser.html
-    table = html.at_css('div[@class="submissions-table"]')
-    throw :scanned_all if table.at_css('p[@class="nomore"]')
-    records = table.xpath('.//table/tbody/tr')
+    loop do
+      # current page
+      html = Nokogiri::HTML.parse $browser.html
+      table = html.at_css('div[@class="submissions-table"]')
+      break if table.at_css('p[@class="nomore"]')
+      records = table.xpath('.//table/tbody/tr')
 
-    records.each do |record|
-      cols = record.xpath('./td')
-      submit_time = parse_time(cols[0].text)
-      throw :scanned_all if submit_time <= last_updated_time
+      records.each do |record|
+        cols = record.xpath('./td')
+        submit_time = parse_time(cols[0].text)
+        throw :scanned_all if submit_time <= last_updated_time
 
-      submission = LeetcodeSubmission.new(
-        submit_time: submit_time,
-        path:        get_path(cols[1]),
-        status:      cols[2].at_css('a').text,
-        detail_path: cols[2].at_css('a')['href'],
-        runtime:     cols[3].text.strip,
-        lang:        cols[4].text.strip,
-        leetcode_id: account.id
-      )
-      submission.save
-      puts "#{cols[0].text} - #{submission.status}"
+        submission = LeetcodeSubmission.new(
+          submit_time: submit_time,
+          path:        get_path(cols[1]),
+          status:      cols[2].at_css('a').text,
+          detail_path: cols[2].at_css('a')['href'],
+          runtime:     cols[3].text.strip,
+          lang:        cols[4].text.strip,
+          leetcode_id: account.id
+        )
+        submission.save
+        puts "#{cols[0].text} - #{submission.status}"
+      end
+
+      # to next page
+      next_page = html.at_css('ul[@class="pager"]').xpath('./li')[1]
+      break if /next disabled/ =~ next_page['class']
+      page_num += 1
+      # visible clickable component is not reliable in headless mode
+      $browser.goto "#{HOST}#{SUBMISSION_PAGE}/#{page_num}/"
     end
-
-    # to next page
-    next_page = html.at_css('ul[@class="pager"]').xpath('./li')[1]
-    throw :scanned_all if /next disabled/ =~ next_page['class']
-    page_num += 1
-    # visible clickable component is not reliable in headless mode
-    $browser.goto "#{HOST}#{SUBMISSION_PAGE}/#{page_num}/"
   end
 end
 
