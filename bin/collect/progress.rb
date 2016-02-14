@@ -24,8 +24,9 @@ def logout
   $browser.goto "#{HOST}#{LOGOUT_PAGE}"
 end
 
-def last_update_time model
-  model.last ? model.last.updated_at : 100.years.ago
+def last_updated_at model, account
+  records = model.where('leetcode_id = ?', account.id)
+  records.last ? records.last.updated_at : 100.years.ago
 end
 
 def analyze account
@@ -41,12 +42,13 @@ def analyze account
   LeetcodeProgress.create(
     ac:         html.xpath('//span[@id="ac_total"]').text,
     submissions: html.xpath('//p[@id="ac_submissions"]').text,
-    slack_id: account.id
-  ) if Time.zone.now >= last_update_time(LeetcodeProgress) + 1.hour
+    leetcode_id: account.id
+  ) if Time.zone.now >= last_updated_at(LeetcodeProgress, account) + 1.hour
 
   # each submissions in details
   $browser.goto "#{HOST}#{SUBMISSION_PAGE}"
 
+  last_updated_time = last_updated_at(LeetcodeSubmission, account)
   page_num = 1
   loop do
     # current page
@@ -58,7 +60,7 @@ def analyze account
     records.each do |record|
       cols = record.xpath('./td')
       submit_time = parse_time(cols[0].text)
-      break if submit_time <= last_update_time(LeetcodeSubmission)
+      break if submit_time <= last_updated_time
 
       submission = LeetcodeSubmission.new(
         submit_time: submit_time,

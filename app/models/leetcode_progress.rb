@@ -1,3 +1,3 @@
 class LeetcodeProgress < ActiveRecord::Base
-  belongs_to :slack
+  belongs_to :leetcode
 end

@@ -227,6 +227,7 @@ class GoalsController < SlacksController
   def goals_sumary
     members = Slack.where('team_id = ?', @team_id)
     sumary = members.map do |m|
+      next unless m.user_id
       user = User.find m.user_id
       tasks = list_tasks(user: user)
       tasks.empty? ? nil : "#{m.slack_name}: #{list_tasks(user: user)}"
