@@ -76,6 +76,22 @@ class GoalsController < SlacksController
       update_points completed
       @broadcast = "#{@slack_name} just completed ##{completed}!"
 
+    elsif /\Adone\s+(?<normal>.+)\z/ =~ task
+      normals = Goal.normal_goals(Time.zone.now, @user.id, @period)
+      if normals.empty?
+        @response = "You don't have normal tasks in your #{@period} goals.\n"
+        return
+      end
+
+      candidates = normals.select {|g| g.task.index normal}
+      if candidates.length == 1
+        candidates[0].completed
+        @response += "You've completed task: #{candidates[0].task}\n"
+      else
+        candidates = normals if candidates.empty?
+        @response = "Your task words are ambiguous, please be more specific.\n"
+      end
+
     # -17
     elsif /\A-(?<to_del>\d+)\z/ =~ task
       question = find_leetcode_by_no to_del
@@ -167,14 +183,7 @@ class GoalsController < SlacksController
   end
 
   def new_task problem, period: @period, type: 'normal'
-    goal = Goal.new(
-      period: period,
-      task_type: type,
-      task: problem.to_s,
-      user_id: @user.id,
-    )
-    goal.save
-    goal
+    Goal.create(task: problem.to_s, period: period, task_type: type, user_id: @user.id)
   end
 
   def current_goals user: @user, period: @period, task_type: nil
@@ -205,7 +214,8 @@ class GoalsController < SlacksController
   end
 
   def format_normals normals
-    normals.map {|g| g.task + (g.progress[0] != '0' ? "[#{g.progress}]" : "")} .join("; ")
+    normals.select {|g| !g.done?
+    } .map {|g| g.task + (g.progress[0] != '0' ? "[#{g.progress}]" : "")} .join("; ")
   end
 
   def find_leetcode_by_no no

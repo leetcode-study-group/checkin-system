@@ -30,6 +30,7 @@ class Goal < ActiveRecord::Base
       question = LeetcodeProblem.find_by_no self.task
       self.point_goal.update_points(question.point)
     else
+      progress = '100' unless progress
       self.progress = progress # overwrite for normals
       self.save
     end
