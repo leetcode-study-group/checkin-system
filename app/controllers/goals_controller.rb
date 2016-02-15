@@ -64,10 +64,7 @@ class GoalsController < SlacksController
     elsif /\A#(?<completed>\d+)\z/ =~ task
       question = find_leetcode_by_no completed
       question = new_task completed, type: 'leetcode_problem' unless question
-      question.progress = (question.progress.to_i + 1).to_s # AC add 1
-      question.save
-
-      update_points completed
+      question.completed
       @broadcast = "#{@slack_name} just completed ##{completed}!"
 
     elsif /\Adone\s+(?<normal>.+)\z/ =~ task
@@ -188,16 +185,13 @@ class GoalsController < SlacksController
 
   # => "{ 1(M) | 7(E) } (0/4) ; os homework"
   def list_tasks user: @user
-    goals = current_goals user: user
-    problems, others = goals.partition {|t| t.task_type == 'leetcode_problem'}
-    point, normals = others.partition {|t| t.task_type == 'leetcode_point'}
-    point = point[0]
-
-    ((problems.empty? and !point) ? "" : "#{format_leetcodes problems, point}; ") +
-      (normals.empty? ? "" : format_normals(normals))
+    "#{format_leetcodes(user:user)}; #{format_normals(user:user)}"
   end
 
-  def format_leetcodes problems, point
+  def format_leetcodes user: @user
+    problems = Goal.leetcode_problems Time.zone.now, user.id, @period
+    return "" if problems.empty?
+    point = problems[0].point_goal
     problems_str = problems.map do |p|
       question = LeetcodeProblem.find_by_no(p.task.to_i)
       "#{p.task}(#{question.difficulty[0]})" + (p.done? ? "\u2705" : "")
@@ -207,7 +201,9 @@ class GoalsController < SlacksController
     "{ #{problems_str} } (#{point.progress}/#{point.task})"
   end
 
-  def format_normals normals
+  def format_normals user: @user
+    normals = Goal.normal_goals Time.zone.now, user.id, @period
+    return "" if normals.empty?
     normals.select {|g| !g.done?
     } .map {|g| g.task + (g.progress[0] != '0' ? "[#{g.progress}]" : "")} .join("; ")
   end
@@ -234,7 +230,7 @@ class GoalsController < SlacksController
       next unless m.user_id
       user = User.find m.user_id
       tasks = list_tasks(user: user)
-      tasks.empty? ? nil : "#{m.slack_name}: #{list_tasks(user: user)}"
+      tasks =~ /\A\s*;\s*\z/ ? nil : "#{m.slack_name}: #{list_tasks(user: user)}"
     end .compact.join("\n")
     [{text: sumary}]
   end
