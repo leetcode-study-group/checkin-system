@@ -257,6 +257,7 @@ NO ARGUMENTS => show your current goals
 #23          => finished leetcode problem #23
 -7           => cancel leetcode problem #7
 copy @Bob => copy Bob's daily goal
+done algo      => complete a normal task which contains word 'algo'
 
 :whatever => set daily goal to 'whatever'
 
