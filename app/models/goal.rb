@@ -21,16 +21,18 @@ class Goal < ActiveRecord::Base
     end
   end
 
-  def completed progress=nil
+  def completed progress=nil, rollback: true
     case self.task_type
     when 'leetcode_point'
-      raise "Can't complete a leetcode_type point goal"
+      raise "Can't complete a leetcode point"
     when 'leetcode_problem'
-      add 1        # progress as AC number
+      Goal.add_rollback(self.user_id, self.period, self.id, -1) if rollback
+      progress ||= 1
+      add progress # progress as AC number
       question = LeetcodeProblem.find_by_no self.task
-      self.point_goal.update_points(question.point)
+      self.point_goal.update_points(question.point, rollback: rollback)
     else
-      progress = '100' unless progress
+      progress ||= '100'
       self.progress = progress # overwrite for normals
       self.save
     end
@@ -59,6 +61,25 @@ class Goal < ActiveRecord::Base
     Goal.goals_of_type time, user_id, period, 'normal'
   end
 
+  def self.add_rollback user_id, period, task_id, progress
+    rollback = Goal.where(task_type: 'rollback', user_id: user_id, period: period, task: task_id)[0]
+    if rollback
+      rollback.add progress
+      rollback
+    else
+      Goal.create(task_type: 'rollback', user_id: user_id, period: period, task: task_id,
+        progress: progress
+      )
+    end
+  end
+
+  def self.rollback
+    Goal.where(task_type: 'rollback').each do |r|
+      Goal.find(r.task).add r.progress
+      r.delete
+    end
+  end
+
   ####### method versions
   def point_goal period: self.period
     Goal.point_goal self.created_at, self.user_id, period
@@ -70,6 +91,11 @@ class Goal < ActiveRecord::Base
 
   def normal_goals period: self.period
     Goal.normal_goals self.created_at, self.user_id, period
+  end
+
+  def add num_str
+    self.progress = (self.progress.to_i + num_str.to_i).to_s
+    self.save
   end
 
   protected
@@ -88,14 +114,11 @@ class Goal < ActiveRecord::Base
     self.tries ||= 0
   end
 
-  def add num_str
-    self.progress = (self.progress.to_i + num_str.to_i).to_s
-    self.save
-  end
-
-  def update_points point
+  def update_points point, rollback: true
     [:daily, :weekly, :monthly, :annual].each do |period|
-      point_goal(period: period).add point
+      goal = point_goal(period: period)
+      goal.add point
+      Goal.add_rollback(goal.user_id, goal.period, goal.id, "-#{point}") if rollback
     end
   end
 
