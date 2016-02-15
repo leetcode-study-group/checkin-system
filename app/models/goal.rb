@@ -21,16 +21,18 @@ class Goal < ActiveRecord::Base
     end
   end
 
-  def completed progress: nil
+  def completed progress=nil
     case self.task_type
     when 'leetcode_point'
-      add progress # progress as problem point
+      raise "Can't complete a leetcode_type point goal"
     when 'leetcode_problem'
       add 1        # progress as AC number
+      question = LeetcodeProblem.find_by_no self.task
+      self.point_goal.update_points(question.point)
     else
       self.progress = progress # overwrite for normals
+      self.save
     end
-    self.save
   end
 
   ####### static queries
@@ -57,15 +59,15 @@ class Goal < ActiveRecord::Base
   end
 
   ####### method versions
-  def point_goal period
+  def point_goal period: self.period
     Goal.point_goal self.created_at, self.user_id, period
   end
 
-  def leetcode_problems period
+  def leetcode_problems period: self.period
     Goal.leetcode_problems self.created_at, self.user_id, period
   end
 
-  def normal_goals period
+  def normal_goals period: self.period
     Goal.normal_goals self.created_at, self.user_id, period
   end
 
@@ -86,12 +88,13 @@ class Goal < ActiveRecord::Base
   end
 
   def add num_str
-    self.progress = (self.progress.to_i + num.to_i).to_s
+    self.progress = (self.progress.to_i + num_str.to_i).to_s
+    self.save
   end
 
   def update_points point
     [:daily, :weekly, :monthly, :annual].each do |period|
-      point_goal(period: period).completed point
+      point_goal(period: period).add point
     end
   end
 
