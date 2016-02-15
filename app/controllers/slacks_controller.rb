@@ -22,6 +22,7 @@ class SlacksController < ApplicationController
     return render plain: 'Authenticate failed' unless @token
 
     @team_id = args[:team_id]
+    @channel_name = args[:channel_name]
     @slack_id = args[:user_id]
     @slack = Slack.find_by_slack_id_and_token_id(
       @slack_id, @token.id
@@ -57,7 +58,8 @@ Please click the following link to sign up in 5 minutes.
 
   # via Incoming webhook
   def send_to_slack json
-    receiver = Receiver.find_by_team_id @team_id
+    receiver = Receiver.find_by_team_id_and_channel_name @team_id, @channel_name
+    receiver = Receiver.find_by_team_id @team_id unless receiver # 1st one as fallback
     return false unless receiver
 
     uri = URI.parse(receiver.url)

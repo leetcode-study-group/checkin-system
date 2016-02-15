@@ -2,8 +2,10 @@
 
 one:
   team_id: MyString
+  channel_name: MyString
   url: MyString
 
 two:
   team_id: MyString
+  channel_name: MyString
   url: MyString

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160214000715) do
+ActiveRecord::Schema.define(version: 20160215101450) do
 
   create_table "delayed_jobs", force: :cascade do |t|
     t.integer  "priority",   default: 0, null: false
@@ -88,9 +88,10 @@ ActiveRecord::Schema.define(version: 20160214000715) do
 
   create_table "receivers", force: :cascade do |t|
     t.string   "team_id"
+    t.string   "channel_name"
     t.string   "url"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at",   null: false
+    t.datetime "updated_at",   null: false
   end
 
   create_table "slacks", force: :cascade do |t|
