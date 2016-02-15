@@ -8,7 +8,6 @@ class GoalsController < SlacksController
   def create
     args = slack_params
     text = args[:text]
-    return already_existed args if /\A(register|signup)\z/ =~ text
 
     slack = Slack.find_by_slack_id args[:user_id]
     @user = User.find(slack.user_id)
@@ -47,11 +46,6 @@ class GoalsController < SlacksController
   end
 
   private
-  def already_existed args
-    slack = Slack.find_by_slack_id args[:user_id]
-    email = slack.leetcode.email
-    render json: {text: "User @#{slack.slack_name} already attached to Leetcode account #{email}"}
-  end
 
   def parse_task task
     # 1, 2-3, 7
