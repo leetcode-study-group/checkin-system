@@ -24,9 +24,7 @@ class SlacksController < ApplicationController
     @team_id = args[:team_id]
     @channel_name = args[:channel_name]
     @slack_id = args[:user_id]
-    @slack = Slack.find_by_slack_id_and_token_id(
-      @slack_id, @token.id
-    )
+    @slack = Slack.find_by_slack_id(@slack_id)
     @slack_name = args[:user_name]
 
     new_slack
