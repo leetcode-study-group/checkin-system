@@ -48,6 +48,7 @@ def analyze account
   # each submissions in details
   $browser.goto "#{HOST}#{SUBMISSION_PAGE}"
   Goal.rollback # remove any manually marked progresses
+  LeetcodeRecent.delete_all
 
   last_updated_time = last_updated_at(LeetcodeSubmission, account)
   page_num = 1
@@ -85,6 +86,10 @@ def analyze account
       $browser.goto "#{HOST}#{SUBMISSION_PAGE}/#{page_num}/"
     end
   end
+  questions = LeetcodeRecent.all.map(&:no)
+  unless questions.empty?
+    $recents[account.slack.team_id] += "#{account.slack.slack_name} completed #{questions.join(', ')}\n"
+  end
 end
 
 def parse_time text
@@ -94,6 +99,13 @@ end
 
 def get_path dom
   dom.at_css('a')['href']
+end
+
+def send_to_slack team_id, msg
+  return false if msg.empty?
+  receiver = Receiver.find_by_team_id team_id
+  return false unless receiver
+  receiver.send_to_slack(text: "Recently:\n#{msg}")
 end
 
 
@@ -107,8 +119,11 @@ headless = Headless.new
 headless.start
 $browser = Watir::Browser.new :chrome
 
+$recents = Hash.new('')
 Leetcode.all.each do |account|
   analyze account
 end
+
+$recents.each {|team_id, msg| send_to_slack team_id, msg}
 
 headless.destroy

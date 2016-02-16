@@ -31,6 +31,7 @@ class Goal < ActiveRecord::Base
       add progress # progress as AC number
       if self.progress == '1'
         question = LeetcodeProblem.find_by_no self.task
+        LeetcodeRecent.create(no: question.no, user_id: self.user_id) unless rollback
         self.point_goal.update_points(question.point, rollback: rollback)
       end
     else

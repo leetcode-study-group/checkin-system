@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160215101450) do
+ActiveRecord::Schema.define(version: 20160216022814) do
 
   create_table "delayed_jobs", force: :cascade do |t|
     t.integer  "priority",   default: 0, null: false
@@ -60,6 +60,15 @@ ActiveRecord::Schema.define(version: 20160215101450) do
   end
 
   add_index "leetcode_progresses", ["leetcode_id"], name: "index_leetcode_progresses_on_leetcode_id"
+
+  create_table "leetcode_recents", force: :cascade do |t|
+    t.integer  "no"
+    t.integer  "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  add_index "leetcode_recents", ["user_id"], name: "index_leetcode_recents_on_user_id"
 
   create_table "leetcode_submissions", force: :cascade do |t|
     t.datetime "submit_time"
