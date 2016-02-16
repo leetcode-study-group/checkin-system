@@ -211,7 +211,7 @@ class GoalsController < SlacksController
   def format_leetcodes user: @user
     problems = Goal.leetcode_problems Time.zone.now, user.id, @period
     return "" if problems.empty?
-    point = problems[0].point_goal
+    point = problems[0].point_goal(period: @period)
     problems_str = problems.map do |p|
       question = LeetcodeProblem.find_by_no(p.task.to_i)
       "#{p.task}(#{question.difficulty[0]})" + (p.done? ? "\u2705" : "")
