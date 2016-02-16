@@ -205,7 +205,13 @@ class GoalsController < SlacksController
 
   # => "{ 1(M) | 7(E) } (0/4) ; os homework"
   def list_tasks user: @user
-    "#{format_leetcodes(user:user)}; #{format_normals(user:user)}"
+    leetcodes = format_leetcodes(user: user)
+    normals = format_normals(user: user)
+    if leetcodes.empty? and normals.empty?
+      "empty"
+    else
+      "#{format_leetcodes(user:user)}; #{format_normals(user:user)}"
+    end
   end
 
   def format_leetcodes user: @user
@@ -216,8 +222,11 @@ class GoalsController < SlacksController
       "#{p.task}(#{question.difficulty[0]})" + (p.done? ? "\u2705" : "")
     end .join(" | ")
 
-    point = Goal.new(task: '0', progress: '0') unless point
-    "{ #{problems_str} } (#{point.progress}/#{point.task})"
+    if problems.empty? and point.task == '0'
+      ""
+    else
+      "{ #{problems_str} } (#{point.progress}/#{point.task})"
+    end
   end
 
   def format_normals user: @user
@@ -249,7 +258,7 @@ class GoalsController < SlacksController
       next unless m.user_id
       user = User.find m.user_id
       tasks = list_tasks(user: user)
-      tasks =~ /\A\s*;\s*\z/ ? nil : "#{m.slack_name}: #{list_tasks(user: user)}"
+      tasks =~ /\Aempty\z/i ? nil : "#{m.slack_name}: #{list_tasks(user: user)}"
     end .compact.join("\n")
     [{text: sumary}]
   end
