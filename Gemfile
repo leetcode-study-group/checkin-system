@@ -65,6 +65,4 @@ gem 'chronic' # calculate relative time
 gem 'whenever', require: false
 
 # better console
-group :development do
-  gem 'pry-rails'
-end
+gem 'pry-rails'
