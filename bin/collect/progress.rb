@@ -86,7 +86,12 @@ def analyze account
       $browser.goto "#{HOST}#{SUBMISSION_PAGE}/#{page_num}/"
     end
   end
-  questions = LeetcodeRecent.all.map(&:no)
+
+  questions = LeetcodeRecent.all.map do |q|
+    problem = LeetcodeProblem.find_by_no q.no
+    "#{q.no}(#{problem.difficulty[0]})"
+  end
+
   unless questions.empty?
     $recents[account.slack.team_id] += "#{account.slack.slack_name} completed #{questions.join(', ')}\n"
   end
