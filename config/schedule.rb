@@ -18,6 +18,9 @@
 # end
 
 # Learn more: http://github.com/javan/whenever
+logs = "#{Whenever.path}/log"
+set :output, {error: "#{logs}/cron.err.log", standard: "#{logs}/cron.log"}
+
 every :hour do
   runner 'bin/collect/progress.rb'
 end
