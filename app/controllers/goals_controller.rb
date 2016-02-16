@@ -50,8 +50,20 @@ class GoalsController < SlacksController
   def parse_task task
     # 1, 2-3, 7
     if /\A(\d+(-\d+)?)(\s*,\s*(\d+(-\d+)?))*\z/ =~ task
-      split_problems(task).each {|p| new_task p, type: 'leetcode_problem'}
-      @broadcast = "#{@slack_name} updated the #{@period} goal!"
+      split_problems(task).each {|p|
+        question = Goal.find_by_user_id_and_task_type_and_task(@user.id, 'leetcode_problem', p)
+        if question
+          if question.done?
+            @response = "You've already completed ##{p}\n"
+          else
+            question.created_at = Time.zone.now
+          end
+        else
+          new_task p, type: 'leetcode_problem'
+          @broadcast = " "
+        end
+      }
+      @broadcast = "#{@slack_name} updated the #{@period} goal!" unless @broadcast.empty?
 
     # 3'
     elsif /\A(?<points>\d+)('|\u2019)\z/ =~ task # the Slack may auto transfer ' to ’
@@ -62,10 +74,18 @@ class GoalsController < SlacksController
 
     # #23
     elsif /\A#(?<completed>\d+)\z/ =~ task
-      question = find_leetcode_by_no completed
-      question = new_task completed, type: 'leetcode_problem' unless question
-      question.completed
-      @broadcast = "#{@slack_name} just completed ##{completed}!"
+      question = Goal.find_by_user_id_and_task_type_and_task(@user.id, 'leetcode_problem', completed)
+      if question
+        if question.done?
+          @response = "You've already completed ##{completed}"
+        else
+          question.created_at = Time.zone.now
+        end
+      else
+        question = new_task completed, type: 'leetcode_problem' unless question
+        question.completed
+        @broadcast = "#{@slack_name} just completed ##{completed}!"
+      end
 
     elsif /\Adone\s+(?<normal>.+)\z/ =~ task
       normals = Goal.normal_goals(Time.zone.now, @user.id, @period)

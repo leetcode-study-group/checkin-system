@@ -47,6 +47,7 @@ def analyze account
 
   # each submissions in details
   $browser.goto "#{HOST}#{SUBMISSION_PAGE}"
+  Goal.rollback # remove any manually marked progresses
 
   last_updated_time = last_updated_at(LeetcodeSubmission, account)
   page_num = 1
@@ -63,8 +64,8 @@ def analyze account
         submit_time = parse_time(cols[0].text)
         throw :scanned_all if submit_time <= last_updated_time
 
-        submission = LeetcodeSubmission.new(
-          submit_time: submit_time,
+        submission = LeetcodeSubmission.create(
+          submit_time: submit_time.in_time_zone(Time.zone.name),
           path:        get_path(cols[1]),
           status:      cols[2].at_css('a').text,
           detail_path: cols[2].at_css('a')['href'],
@@ -72,7 +73,7 @@ def analyze account
           lang:        cols[4].text.strip,
           leetcode_id: account.id
         )
-        submission.save
+        submission.update_goal
         puts "#{cols[0].text} - #{submission.status}"
       end
 
