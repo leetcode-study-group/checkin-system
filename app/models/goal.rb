@@ -3,7 +3,7 @@ class Goal < ActiveRecord::Base
   validates :user_id, presence: true
   validates :task, presence: true
   validates :task_type, presence: true
-  validates_uniqueness_of :task, scope: [:user_id, :period, :task_type]
+  validates_uniqueness_of :task, scope: [:user_id, :period, :task_type], if: lambda {|o| o.task_type != 'leetcode_point'}
 
   after_initialize :set_default
 
@@ -29,8 +29,10 @@ class Goal < ActiveRecord::Base
       Goal.add_rollback(self.user_id, self.period, self.id, -1) if rollback
       progress ||= 1
       add progress # progress as AC number
-      question = LeetcodeProblem.find_by_no self.task
-      self.point_goal.update_points(question.point, rollback: rollback)
+      if self.progress == '1'
+        question = LeetcodeProblem.find_by_no self.task
+        self.point_goal.update_points(question.point, rollback: rollback)
+      end
     else
       progress ||= '100'
       self.progress = progress # overwrite for normals
@@ -39,7 +41,7 @@ class Goal < ActiveRecord::Base
   end
 
   ####### static queries
-  def self.point_goal time, user_id, period
+  def self.point_goal time, user_id, period, created_at: time
     p_goal = Goal.where(
       created_at: time.period_range(period),
       period: period,
@@ -49,7 +51,8 @@ class Goal < ActiveRecord::Base
     p_goal ? p_goal : Goal.create(
       period: period,
       task_type: 'leetcode_point',
-      user_id: user_id
+      user_id: user_id,
+      created_at: created_at,
     )
   end
 
@@ -93,8 +96,8 @@ class Goal < ActiveRecord::Base
     Goal.normal_goals self.created_at, self.user_id, period
   end
 
-  def add num_str
-    self.progress = (self.progress.to_i + num_str.to_i).to_s
+  def add num_str, field: :progress
+    eval("self.#{field} = (self.#{field}.to_i + num_str.to_i).to_s")
     self.save
   end
 
