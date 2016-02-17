@@ -1,6 +1,6 @@
 class Receiver < ActiveRecord::Base
   def send_to_slack json
-    uri = URI.parse(receiver.url)
+    uri = URI.parse(self.url)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true if URI::HTTPS === uri
 
