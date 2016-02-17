@@ -110,7 +110,7 @@ def send_to_slack team_id, msg
   return false if msg.empty?
   receiver = Receiver.find_by_team_id team_id
   return false unless receiver
-  receiver.send_to_slack(text: "Recently:\n#{msg}")
+  receiver.send_to_slack(text: msg)
 end
 
 
