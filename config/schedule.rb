@@ -21,7 +21,7 @@
 logs = "#{Whenever.path}/log"
 set :output, {error: "#{logs}/cron.err.log", standard: "#{logs}/cron.log"}
 
-every :hour do
+every 10.minutes do
   runner 'bin/collect/progress.rb'
 end
 
