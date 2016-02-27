@@ -1,4 +1,4 @@
-* README
+# README
 
 [![Floobits Status](https://floobits.com/robturtle/checkin-system.svg)](https://floobits.com/robturtle/checkin-system/redirect)
 
@@ -11,23 +11,23 @@ Current Plan
 
 
 
-** Ruby version
+## Ruby version
 
-** System dependencies
+## System dependencies
 
-** Configuration
+## Configuration
 
-** Database creation
+## Database creation
 
-** Database initialization
+## Database initialization
 
-** How to run the test suite
+## How to run the test suite
 
-** Services (job queues, cache servers, search engines, etc.)
+## Services (job queues, cache servers, search engines, etc.)
 
-** Deployment instructions
+## Deployment instructions
 
-** ...
+## ...
 
 Please feel free to use a different markup language if you do not plan to run
 `rake doc:app`.
