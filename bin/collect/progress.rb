@@ -35,7 +35,7 @@ def analyze account
   sleep 3 # wait for js animation
   html = Nokogiri::HTML.parse $browser.html
 
-  username = html.xpath('//a[@class="dropdown-toggle"]')[1].text.strip
+  username = html.xpath('//ul[@id="navBar-right"]/li/a')[0].text.strip
   account.update(username: username) if account.username != username
 
   # Total progress
