@@ -3,5 +3,3 @@
 Mainly to provide personal information sharing for Slack members.
 
 Currently is used for Leetcode accounts.
-
-It will make a big refact very soon.
